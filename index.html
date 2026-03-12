@@ -47,6 +47,15 @@
       background: #18a347;
     }
 
+    #randomBtn {
+      background: #ff4757;
+      font-weight: bold;
+    }
+
+    #randomBtn:hover {
+      background: #e84141;
+    }
+
     .results {
       margin-top: 20px;
       text-align: left;
@@ -91,6 +100,7 @@
     <input type="text" id="searchInput" placeholder="Type a song or artist...">
 
     <button onclick="searchYouTube()">Search</button>
+    <button id="randomBtn" onclick="randomSong()">Random Song</button>
 
     <div class="results" id="results"></div>
 
@@ -103,16 +113,13 @@
       const resultsDiv = document.getElementById("results");
       resultsDiv.innerHTML = "Searching...";
 
-      // Use public YouTube search results (no API)
       fetch(`https://corsproxy.io/?https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`)
         .then(res => res.text())
         .then(html => {
           resultsDiv.innerHTML = "";
 
-          // Extract video IDs using regex
           const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
 
-          // Show first 10 results
           videoIds.slice(0, 10).forEach(id => {
             const item = document.createElement("div");
             item.className = "video-item";
@@ -123,6 +130,27 @@
             item.onclick = () => playVideo(id);
             resultsDiv.appendChild(item);
           });
+        });
+    }
+
+    function randomSong() {
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "Loading random song...";
+
+      fetch(`https://corsproxy.io/?https://www.youtube.com/feed/trending`)
+        .then(res => res.text())
+        .then(html => {
+          const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
+
+          if (videoIds.length === 0) {
+            resultsDiv.innerHTML = "Could not load random song.";
+            return;
+          }
+
+          const randomId = videoIds[Math.floor(Math.random() * videoIds.length)];
+          playVideo(randomId);
+
+          resultsDiv.innerHTML = `<strong>Random Song Loaded!</strong>`;
         });
     }
 
