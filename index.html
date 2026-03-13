@@ -1,15 +1,30 @@
 <script>
+  function safeLog(msg) {
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = `<div style="color:#ff6b6b;">${msg}</div>`;
+  }
+
   function searchYouTube() {
     const query = document.getElementById("searchInput").value;
     const resultsDiv = document.getElementById("results");
     resultsDiv.innerHTML = "Searching...";
 
-    fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent("https://www.youtube.com/results?search_query=" + query)}`)
+    fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent("https://www.youtube.com/results?search_query=" + query)}`)
       .then(res => res.text())
       .then(html => {
+        if (!html.includes("videoId")) {
+          safeLog("Proxy returned no video IDs. Proxy might be blocked or rate-limited.");
+          return;
+        }
+
         resultsDiv.innerHTML = "";
 
         const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
+
+        if (videoIds.length === 0) {
+          safeLog("No results found.");
+          return;
+        }
 
         videoIds.slice(0, 10).forEach(id => {
           const item = document.createElement("div");
@@ -21,6 +36,9 @@
           item.onclick = () => playVideo(id);
           resultsDiv.appendChild(item);
         });
+      })
+      .catch(err => {
+        safeLog("Search failed. Proxy blocked or network error.");
       });
   }
 
@@ -28,13 +46,18 @@
     const resultsDiv = document.getElementById("results");
     resultsDiv.innerHTML = "Loading random song...";
 
-    fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent("https://www.youtube.com/feed/trending")}`)
+    fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent("https://www.youtube.com/feed/trending")}`)
       .then(res => res.text())
       .then(html => {
+        if (!html.includes("videoId")) {
+          safeLog("Proxy returned no video IDs. Random song failed.");
+          return;
+        }
+
         const videoIds = [...html.matchAll(/"videoId":"(.*?)"/g)].map(m => m[1]);
 
         if (videoIds.length === 0) {
-          resultsDiv.innerHTML = "Could not load random song.";
+          safeLog("Could not load random song.");
           return;
         }
 
@@ -42,6 +65,9 @@
         playVideo(randomId);
 
         resultsDiv.innerHTML = `<strong>Random Song Loaded!</strong>`;
+      })
+      .catch(() => {
+        safeLog("Random song failed. Proxy blocked or network error.");
       });
   }
 
